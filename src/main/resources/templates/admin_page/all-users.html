@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en"
+      xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:th="http://www.thymeleaf.org">
+<style>
+    h2, h4 {
+        margin-left: 15px;
+    }
+    table {
+        border-spacing: 10px;
+    }
+</style>
+<head>
+    <meta charset="UTF-8">
+    <title>Users</title>
+    <link href="https://i.ibb.co/dGFjh85/skull.png" rel="icon">
+</head>
+<body>
+<header>
+    <h4>Go to <a href="/user" >my page</a> or <a href="/logout" >logout</a></h4>
+</header>
+
+<h2>All users' page</h2>
+<table>
+    <tr>
+        <th>Name</th>
+        <th>Operations</th>
+    </tr>
+
+    <th:block th:each="user:${allUsers}">
+        <tr>
+            <td><a th:text="${user.getUsername()}"></a></td>
+            <td>
+                <form>
+                    <input type="hidden" name="id" th:value="${user.getId()}" />
+                    <button type="submit" formaction="/admin/editUser">Update</button>
+                    <button type="submit" formaction="/admin/deleteUser">Delete</button>
+                </form>
+            </td>
+        </tr>
+    </th:block>
+
+</table>
+
+<input type = "button" value="Add"
+       onclick="window.location.href = 'admin/createNewUser'"/>
+
+</body>
+</html>

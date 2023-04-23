@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>New user</title>
+    <link href="https://i.ibb.co/dGFjh85/skull.png" rel="icon">
+</head>
+
+<body>
+<header>
+    <h4>Go to <a href="/user" >my page</a> or <a href="/logout" >logout</a></h4>
+</header>
+
+<h2>User info</h2>
+<br>
+
+<form th:method="POST" th:action="@{/admin/saveUser}" th:object="${user}">
+
+    <input type="hidden" th:field="*{id}"/>
+
+    <label for="name">Name: </label>
+    <input type="text" th:field="*{username}" id="name">
+    <br><br>
+
+    <label for="password">Password: </label>
+    <input type="text" th:field="*{password}" id="password">
+    <br><br>
+
+
+
+<!--    <div>Role: </div>-->
+
+<!--    <th:block th:each="role:${roles}">-->
+
+<!--        <div>-->
+<!--            <input type="checkbox" id="role" name="role">-->
+<!--            <label for="role"><a th:text="${role}"></a></label>-->
+<!--        </div>-->
+
+
+
+<!--        <a th:text="${roles.getName()}"></a>-->
+<!--    </th:block>-->
+
+
+
+
+    <input type="submit" value="Approve">
+</form>
+
+</body>
+</html>
