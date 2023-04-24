@@ -6,11 +6,12 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import ru.kata.spring.boot_security.demo.dao.UserDAO;
 import ru.kata.spring.boot_security.demo.entities.Role;
 import ru.kata.spring.boot_security.demo.entities.User;
+import ru.kata.spring.boot_security.demo.repositories.RoleRepository;
 import ru.kata.spring.boot_security.demo.repositories.UserRepository;
 
 import java.util.Collection;
@@ -20,15 +21,17 @@ import java.util.stream.Collectors;
 @Service
 public class UserServiceImpl
         implements UserService, UserDetailsService {
-    private final UserDAO userDAO;
-    private UserRepository userRepository;
+    private final UserRepository userRepository;
+    private final RoleRepository roleRepository;
+    private final PasswordEncoder passwordEncoder;
 
-    //RepositoryからLogic
     @Autowired
-    public void setUserRepository(UserRepository userRepository) {
+    public UserServiceImpl(UserRepository userRepository
+            , RoleRepository roleRepository, PasswordEncoder passwordEncoder) {
         this.userRepository = userRepository;
+        this.roleRepository = roleRepository;
+        this.passwordEncoder = passwordEncoder;
     }
-
     @Override
     public User findByUsername(String username) {
         return userRepository.findByUsername(username);
@@ -50,40 +53,49 @@ public class UserServiceImpl
         return roles.stream().map(r -> new SimpleGrantedAuthority(r.getName())).collect(Collectors.toList());
     }
 
-    //CONSTRUCTOR
-    @Autowired
-    public UserServiceImpl(UserDAO userDAO) {
-        this.userDAO = userDAO;
+    //CRUD OPERATIONS
+    public Collection<Role> getRoles() {
+        return roleRepository.findAll();
     }
 
-    //CRUD OPERATIONS
+    @Transactional
+    public void addRoles(Role role) {
+        roleRepository.save(role);
+    }
+
     @Override
     @Transactional
     public List<User> getAllUsers() {
-        return userDAO.getAllUsers();
+        return userRepository.findAll();
     }
 
     @Override
     @Transactional
     public void createUser(User user) {
-        userDAO.createUser(user);
+        encodePassword(user);
+        userRepository.save(user);
     }
 
     @Override
     @Transactional
     public User getUser(int id) {
-        return userDAO.getUser(id);
+        return userRepository.findById(id).orElse(null);
     }
 
     @Override
     @Transactional
     public void deleteUser(int id) {
-        userDAO.deleteUser(id);
+        userRepository.deleteById(id);
     }
 
     @Override
     @Transactional
     public void updateUser(User user){
-        userDAO.updateUser(user);
+        encodePassword(user);
+        userRepository.save(user);
+    }
+
+    private void encodePassword(User user) {
+        user.setPassword(passwordEncoder.encode(user.getPassword()));
     }
 }
