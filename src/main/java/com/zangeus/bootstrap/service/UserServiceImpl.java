@@ -1,5 +1,9 @@
-package ru.kata.spring.boot_security.demo.service;
+package com.zangeus.bootstrap.service;
 
+import com.zangeus.bootstrap.entities.Role;
+import com.zangeus.bootstrap.entities.User;
+import com.zangeus.bootstrap.repositories.RoleRepository;
+import com.zangeus.bootstrap.repositories.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -9,10 +13,6 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import ru.kata.spring.boot_security.demo.entities.Role;
-import ru.kata.spring.boot_security.demo.entities.User;
-import ru.kata.spring.boot_security.demo.repositories.RoleRepository;
-import ru.kata.spring.boot_security.demo.repositories.UserRepository;
 
 import java.util.Collection;
 import java.util.List;
@@ -27,26 +27,29 @@ public class UserServiceImpl
 
     @Autowired
     public UserServiceImpl(UserRepository userRepository
-            , RoleRepository roleRepository, PasswordEncoder passwordEncoder) {
+            , RoleRepository roleRepository
+            , PasswordEncoder passwordEncoder
+    ) {
         this.userRepository = userRepository;
         this.roleRepository = roleRepository;
         this.passwordEncoder = passwordEncoder;
     }
+
     @Override
-    public User findByUsername(String username) {
-        return userRepository.findByUsername(username);
+    public User findByEmail(String email) {
+        return userRepository.findByEmail(email);
     }
 
     @Override
     @Transactional
-    public UserDetails loadUserByUsername(String username)
+    public UserDetails loadUserByUsername(String email)
             throws UsernameNotFoundException {
-        User user = findByUsername(username);
+        User user = findByEmail(email);
         if (user == null) {
-            throw new UsernameNotFoundException(String.format("User '%s' not found", username));
+            throw new UsernameNotFoundException(String.format("User with current email: '%s' - not found", email));
         }
         return new org.springframework.security.core.userdetails.User(
-                user.getUsername(), user.getPassword(), mapRolesToAuthorities(user.getRoles()));
+                user.getEmail(), user.getPassword(), mapRolesToAuthorities(user.getRoles()));
     }
 
     private Collection<? extends GrantedAuthority> mapRolesToAuthorities(Collection<Role> roles) {
@@ -54,6 +57,7 @@ public class UserServiceImpl
     }
 
     //CRUD OPERATIONS
+    @Transactional
     public Collection<Role> getRoles() {
         return roleRepository.findAll();
     }
@@ -71,8 +75,8 @@ public class UserServiceImpl
 
     @Override
     @Transactional
-    public void createUser(User user) {
-        encodePassword(user);
+    public void saveUser(User user) {
+        user.setPassword(passwordEncoder.encode(user.getPassword()));
         userRepository.save(user);
     }
 
@@ -84,18 +88,18 @@ public class UserServiceImpl
 
     @Override
     @Transactional
-    public void deleteUser(int id) {
-        userRepository.deleteById(id);
-    }
-
-    @Override
-    @Transactional
-    public void updateUser(User user){
-        encodePassword(user);
-        userRepository.save(user);
-    }
-
-    private void encodePassword(User user) {
-        user.setPassword(passwordEncoder.encode(user.getPassword()));
+    public void deleteUserAndHisTokensById(int userId) {
+        User userToBeDelete = userRepository.findById(userId).orElseThrow(NullPointerException::new);
+        userToBeDelete.getRoles()
+               .forEach(role -> {
+                   Collection<User> updatedUsers = role.getUsers()
+                           .stream()
+                           .filter(account -> !account.equals(userToBeDelete))
+                           .collect(Collectors.toSet());
+                   role.setUsers(updatedUsers);
+                   roleRepository.save(role);
+               });
+        userToBeDelete.setRoles(null);
+        userRepository.deleteById(userId);
     }
 }
