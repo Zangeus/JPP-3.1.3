@@ -1,25 +1,27 @@
 package com.zangeus.bootstrap.configs;
 
+import com.zangeus.bootstrap.security.UserDetailsServiceImpl;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
+import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import com.zangeus.bootstrap.service.UserServiceImpl;
+
 
 @Configuration
 @EnableWebSecurity
 public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
     private final SuccessUserHandler successUserHandler;
-    private UserServiceImpl userService;
+    private UserDetailsServiceImpl userService;
+    private PasswordEncoder passwordEncoder;
 
     @Autowired
-    public void setUserService(UserServiceImpl userService) {
+    public WebSecurityConfig(SuccessUserHandler successUserHandler, UserDetailsServiceImpl userService, PasswordEncoder passwordEncoder) {
+        this.successUserHandler = successUserHandler;
         this.userService = userService;
+        this.passwordEncoder = passwordEncoder;
     }
 
     public WebSecurityConfig(SuccessUserHandler successUserHandler) {
@@ -29,29 +31,25 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
     @Override
     protected void configure(HttpSecurity http) throws Exception {
         http
-                .authorizeRequests() // To get access to whole app
-                .antMatchers("/admin/**").hasRole("ADMIN") //Admin place
-                .antMatchers("/user/**").authenticated() //must be authenticated
+                .csrf().disable()
+                .authorizeRequests()
+                .antMatchers("/").permitAll()
+                .antMatchers("/admin", "/api/**", "/active").hasRole("ADMIN")
+                .antMatchers("/user").hasAnyRole("ADMIN", "USER")
+                .anyRequest().authenticated()
                 .and()
-                .formLogin() //we provide the form to login
-                .successHandler(successUserHandler) //if everything's right it goes in work
-                .usernameParameter("email")
+                .formLogin().loginPage("/")
+                .loginProcessingUrl("/login")
+                .successHandler(successUserHandler)
                 .permitAll()
                 .and()
-                .logout().logoutSuccessUrl("/") // redirect to login
+                .logout()
                 .permitAll();
     }
 
-    @Bean
-    public PasswordEncoder getPasswordEncoder() {
-        return new BCryptPasswordEncoder();
-    }
-
-    @Bean
-    public DaoAuthenticationProvider daoAuthenticationProvider () {
-        DaoAuthenticationProvider authenticationProvider = new DaoAuthenticationProvider();
-        authenticationProvider.setPasswordEncoder(getPasswordEncoder());
-        authenticationProvider.setUserDetailsService(userService);
-        return authenticationProvider;
+    @Override
+    protected void configure(AuthenticationManagerBuilder auth) throws Exception {
+        auth.userDetailsService(userService)
+                .passwordEncoder(passwordEncoder);
     }
 }

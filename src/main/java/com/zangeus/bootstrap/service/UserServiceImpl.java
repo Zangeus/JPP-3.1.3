@@ -1,105 +1,78 @@
 package com.zangeus.bootstrap.service;
 
-import com.zangeus.bootstrap.entities.Role;
-import com.zangeus.bootstrap.entities.User;
-import com.zangeus.bootstrap.repositories.RoleRepository;
-import com.zangeus.bootstrap.repositories.UserRepository;
+import com.zangeus.bootstrap.dao.RoleDao;
+import com.zangeus.bootstrap.dao.UserDao;
+import com.zangeus.bootstrap.model.Role;
+import com.zangeus.bootstrap.model.User;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.core.GrantedAuthority;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
-import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.security.core.userdetails.UserDetailsService;
-import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
+import org.springframework.ui.Model;
 
-import java.util.Collection;
+import javax.transaction.Transactional;
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Service
-public class UserServiceImpl
-        implements UserService, UserDetailsService {
-    private final UserRepository userRepository;
-    private final RoleRepository roleRepository;
-    private final PasswordEncoder passwordEncoder;
+@Transactional
+public class UserServiceImpl implements UserService {
+
+    private UserDao userDao;
+    private RoleDao roleDao;
+    private PasswordEncoder passwordEncoder;
 
     @Autowired
-    public UserServiceImpl(UserRepository userRepository
-            , RoleRepository roleRepository
-            , PasswordEncoder passwordEncoder
-    ) {
-        this.userRepository = userRepository;
-        this.roleRepository = roleRepository;
+    public UserServiceImpl(UserDao userDao, RoleDao roleDao, PasswordEncoder passwordEncoder) {
+        this.userDao = userDao;
+        this.roleDao = roleDao;
         this.passwordEncoder = passwordEncoder;
     }
 
+    @Transactional
     @Override
-    public User findByEmail(String email) {
-        return userRepository.findByEmail(email);
-    }
-
-    @Override
-    @Transactional
-    public UserDetails loadUserByUsername(String email)
-            throws UsernameNotFoundException {
-        User user = findByEmail(email);
-        if (user == null) {
-            throw new UsernameNotFoundException(String.format("User with current email: '%s' - not found", email));
-        }
-        return new org.springframework.security.core.userdetails.User(
-                user.getEmail(), user.getPassword(), mapRolesToAuthorities(user.getRoles()));
-    }
-
-    private Collection<? extends GrantedAuthority> mapRolesToAuthorities(Collection<Role> roles) {
-        return roles.stream().map(r -> new SimpleGrantedAuthority(r.getName())).collect(Collectors.toList());
-    }
-
-    //CRUD OPERATIONS
-    @Transactional
-    public Collection<Role> getRoles() {
-        return roleRepository.findAll();
-    }
-
-    @Transactional
-    public void addRoles(Role role) {
-        roleRepository.save(role);
-    }
-
-    @Override
-    @Transactional
-    public List<User> getAllUsers() {
-        return userRepository.findAll();
-    }
-
-    @Override
-    @Transactional
     public void saveUser(User user) {
+        for (Role role : user.getRoles()) {
+            role.setId(roleDao.findRoleByAuthority(role.getAuthority()).getId());
+        }
         user.setPassword(passwordEncoder.encode(user.getPassword()));
-        userRepository.save(user);
+        userDao.saveUser(user);
     }
 
-    @Override
     @Transactional
-    public User getUser(int id) {
-        return userRepository.findById(id).orElse(null);
+    @Override
+    public void removeUserById(Long id) {
+        userDao.removeUserById(id);
     }
 
-    @Override
     @Transactional
-    public void deleteUserAndHisTokensById(int userId) {
-        User userToBeDelete = userRepository.findById(userId).orElseThrow(NullPointerException::new);
-        userToBeDelete.getRoles()
-               .forEach(role -> {
-                   Collection<User> updatedUsers = role.getUsers()
-                           .stream()
-                           .filter(account -> !account.equals(userToBeDelete))
-                           .collect(Collectors.toSet());
-                   role.setUsers(updatedUsers);
-                   roleRepository.save(role);
-               });
-        userToBeDelete.setRoles(null);
-        userRepository.deleteById(userId);
+    @Override
+    public void updateUserById(Long id, User user, Model model) {
+        for (Role role : user.getRoles()) {
+            role.setId(roleDao.findRoleByAuthority(role.getAuthority()).getId());
+        }
+        user.setPassword(passwordEncoder.encode(user.getPassword()));
+        userDao.updateUserById(id, user);
     }
+
+    @Transactional
+    @Override
+    public User showById(Long id) {
+        return userDao.showById(id);
+    }
+
+    @Transactional
+    @Override
+    public List<User> getAllUsers() {
+        return userDao.getAllUsers();
+    }
+
+    @Transactional
+    @Override
+    public User findByUsername(String username) {
+        return userDao.findByUsername(username);
+    }
+
+    public List<Role> findAllRoles() {
+        return roleDao.findAll();
+    }
+
 }
