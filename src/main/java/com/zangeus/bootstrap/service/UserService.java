@@ -1,9 +1,6 @@
 package com.zangeus.bootstrap.service;
 
-import com.zangeus.bootstrap.entities.Role;
 import com.zangeus.bootstrap.entities.User;
-import org.springframework.ui.Model;
-
 import java.util.List;
 
 public interface UserService {

@@ -1,7 +1,6 @@
 package com.zangeus.bootstrap.service;
 
 import com.zangeus.bootstrap.entities.User;
-import com.zangeus.bootstrap.repositories.RoleRepository;
 import com.zangeus.bootstrap.repositories.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -17,7 +16,6 @@ public class UserServiceImpl implements UserService {
 
     @Autowired
     public UserServiceImpl(UserRepository userRepository
-            , RoleRepository roleRepository
             , PasswordEncoder passwordEncoder) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
