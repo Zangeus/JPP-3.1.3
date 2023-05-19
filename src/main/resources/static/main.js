@@ -10,7 +10,9 @@ const usersTable = document.getElementById('users-table')
 const listAllUsers = (users) => {
     users.forEach(user => {
         roleLet = '';
-        user.roles.forEach((role) => roleLet += role.toString + " ");
+        let roles = user.roles;
+        console.log(roles);
+        roles.forEach((role) => roleLet += role.toString + " ");
         output += `<tr>
                 <th><p>${user.id} </p></th>
                 <th><p>${user.name} </p></th>
@@ -71,7 +73,6 @@ usersTable.addEventListener('click', (e) => {
                 $('#ageEdit').val(data.age)
                 $('#emailEdit').val(data.email)
                 $('#passwordEdit').val('')
-
 
                 fetch(rolesListUrl)
                     .then(res => res.json())

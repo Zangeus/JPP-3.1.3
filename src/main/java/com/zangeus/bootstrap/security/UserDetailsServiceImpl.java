@@ -1,21 +1,23 @@
 package com.zangeus.bootstrap.security;
 
-import com.zangeus.bootstrap.model.User;
+import com.zangeus.bootstrap.entities.Role;
+import com.zangeus.bootstrap.entities.User;
 import com.zangeus.bootstrap.service.UserServiceImpl;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 
 import javax.transaction.Transactional;
+import java.util.Collection;
+import java.util.stream.Collectors;
 
 @Service
-@Transactional
 public class UserDetailsServiceImpl implements UserDetailsService {
-
-
-    private UserServiceImpl userService;
+    private final UserServiceImpl userService;
 
     @Autowired
     public UserDetailsServiceImpl(UserServiceImpl userService) {
@@ -23,13 +25,16 @@ public class UserDetailsServiceImpl implements UserDetailsService {
     }
 
     @Override
-    @Transactional
-    public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
-        User user = userService.findByUsername(username);
+    public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
+        User user = userService.findByEmail(email);
         if (user == null) {
-            throw new UsernameNotFoundException(String.format("User '%s' not found", username));
+            throw new UsernameNotFoundException(String.format("User with current email: '%s' - not found", email));
         }
-        return user;
+        return new org.springframework.security.core.userdetails.User(
+                user.getEmail(), user.getPassword(), mapRolesToAuthorities(user.getRoles()));
     }
 
+    private Collection<? extends GrantedAuthority> mapRolesToAuthorities(Collection<Role> roles) {
+        return roles.stream().map(r -> new SimpleGrantedAuthority(r.getName())).collect(Collectors.toList());
+    }
 }

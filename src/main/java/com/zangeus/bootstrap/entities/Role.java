@@ -1,24 +1,18 @@
-package com.zangeus.bootstrap.model;
-
+package com.zangeus.bootstrap.entities;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import org.springframework.security.core.GrantedAuthority;
 
 import javax.persistence.*;
 
-
 @Entity
 @Table(name = "roles")
 public class Role implements GrantedAuthority {
-
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "id")
-    private Long id;
+    private int id;
 
-    @Column(name = "name")
     private String name;
-
 
     public Role() {
     }
@@ -27,11 +21,11 @@ public class Role implements GrantedAuthority {
         this.name = name;
     }
 
-    public Long getId() {
+    public int getId() {
         return id;
     }
 
-    public void setId(Long id) {
+    public void setId(int id) {
         this.id = id;
     }
 

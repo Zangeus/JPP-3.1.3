@@ -1,25 +1,15 @@
 package com.zangeus.bootstrap.service;
 
-
-import com.zangeus.bootstrap.model.Role;
-import com.zangeus.bootstrap.model.User;
+import com.zangeus.bootstrap.entities.Role;
+import com.zangeus.bootstrap.entities.User;
 import org.springframework.ui.Model;
 
 import java.util.List;
 
 public interface UserService {
-
-    void saveUser(User user);
-
-    void removeUserById(Long id);
-
-    void updateUserById(Long id, User user, Model model);
-
-    User showById(Long id);
-
+    User findByEmail(String email);
     List<User> getAllUsers();
-
-    User findByUsername(String username);
-
-    List<Role> findAllRoles();
+    User getUser(int id);
+    void saveUser(User user);
+    void deleteUserAndHisTokensById(int id);
 }
